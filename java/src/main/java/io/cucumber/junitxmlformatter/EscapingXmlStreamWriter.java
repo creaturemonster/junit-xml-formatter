@@ -7,49 +7,45 @@ import java.util.regex.Pattern;
 
 import static java.lang.Character.offsetByCodePoints;
 
-class EscapingXmlStreamWriter implements AutoCloseable {
-
-    private final XMLStreamWriter writer;
-
-    EscapingXmlStreamWriter(XMLStreamWriter writer) {
-        this.writer = Objects.requireNonNull(writer);
+class EscapingXmlStreamWriter {
+    // refactor: add a constructor that takes a XMLStreamWriter
+    // reason: the class should be able to write to a XMLStreamWriter
+    public EscapingXmlStreamWriter(XMLStreamWriter reportWriter) {
+        this.reportWriter = Objects.requireNonNull(reportWriter);
     }
 
-    @Override
-    public void close() throws XMLStreamException {
-        writer.close();
-    }
+    private final XMLStreamWriter reportWriter;
 
     void writeStartDocument(String encoding, String version) throws XMLStreamException {
-        writer.writeStartDocument(encoding, version);
+        reportWriter.writeStartDocument(encoding, version);
     }
 
     void writeNewLine() throws XMLStreamException {
-        writer.writeCharacters("\n");
+        reportWriter.writeCharacters("\n");
     }
 
     void writeStartElement(String localName) throws XMLStreamException {
-        writer.writeStartElement(localName);
+        reportWriter.writeStartElement(localName);
     }
 
     void writeEndElement() throws XMLStreamException {
-        writer.writeEndElement();
+        reportWriter.writeEndElement();
     }
 
     void writeEndDocument() throws XMLStreamException {
-        writer.writeEndDocument();
+        reportWriter.writeEndDocument();
     }
 
     void flush() throws XMLStreamException {
-        writer.flush();
+        reportWriter.flush();
     }
 
     void writeEmptyElement(String localName) throws XMLStreamException {
-        writer.writeEmptyElement(localName);
+        reportWriter.writeEmptyElement(localName);
     }
 
     void writeAttribute(String localName, String value) throws XMLStreamException {
-        writer.writeAttribute(localName, escapeIllegalChars(value));
+        reportWriter.writeAttribute(localName, escapeIllegalChars(value));
     }
 
     private static final Pattern CDATA_TERMINATOR_SPLIT = Pattern.compile("(?<=]])(?=>)");
@@ -58,7 +54,7 @@ class EscapingXmlStreamWriter implements AutoCloseable {
         // https://stackoverflow.com/questions/223652/is-there-a-way-to-escape-a-cdata-end-token-in-xml
         for (String part : CDATA_TERMINATOR_SPLIT.split(data, -1)) {
             // see https://www.w3.org/TR/xml/#dt-cdsection
-            writer.writeCData(escapeIllegalChars(part));
+            reportWriter.writeCData(escapeIllegalChars(part));
         }
     }
 

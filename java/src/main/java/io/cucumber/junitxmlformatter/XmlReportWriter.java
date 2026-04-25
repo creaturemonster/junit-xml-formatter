@@ -23,43 +23,35 @@ class XmlReportWriter {
         this.data = data;
     }
 
-    void writeXmlReport(Writer out) throws XMLStreamException {
-        XMLOutputFactory factory = XMLOutputFactory.newInstance();
-        EscapingXmlStreamWriter writer = new EscapingXmlStreamWriter(factory.createXMLStreamWriter(out));
-        writer.writeStartDocument("UTF-8", "1.0");
-        writer.writeNewLine();
-        writeTestsuite(writer);
-        writer.writeEndDocument();
-        writer.flush();
-    }
-
-    private void writeTestsuite(EscapingXmlStreamWriter writer) throws XMLStreamException {
-        writer.writeStartElement("testsuite");
-        writeSuiteAttributes(writer);
-        writer.writeNewLine();
+    // refactor: rename the private field writer to xmlStreamWriter
+    // reason: the class should be able to write to a XMLStreamWriter
+    void writeXmlReport(EscapingXmlStreamWriter xmlStreamWriter) throws XMLStreamException {
+        xmlStreamWriter.writeStartElement("testsuite");
+        writeSuiteAttributes(xmlStreamWriter);
+        xmlStreamWriter.writeNewLine();
 
         for (TestCaseStarted testCaseStarted : data.getAllTestCaseStarted()) {
-            writeTestcase(writer, testCaseStarted);
+            writeTestcase(xmlStreamWriter, testCaseStarted);
         }
 
-        writer.writeEndElement();
-        writer.writeNewLine();
+        xmlStreamWriter.writeEndElement();
+        xmlStreamWriter.writeNewLine();
     }
 
-    private void writeSuiteAttributes(EscapingXmlStreamWriter writer) throws XMLStreamException {
-        writer.writeAttribute("name", data.getTestSuiteName());
-        writer.writeAttribute("time", String.valueOf(data.getSuiteDurationInSeconds()));
+    private void writeSuiteAttributes(EscapingXmlStreamWriter xmlStreamWriter) throws XMLStreamException {
+        xmlStreamWriter.writeAttribute("name", data.getTestSuiteName());
+        xmlStreamWriter.writeAttribute("time", String.valueOf(data.getSuiteDurationInSeconds()));
 
         Map<TestStepResultStatus, Long> counts = data.getTestCaseStatusCounts();
 
-        writer.writeAttribute("tests", String.valueOf(data.getTestCaseCount()));
-        writer.writeAttribute("skipped", String.valueOf(counts.get(SKIPPED)));
-        writer.writeAttribute("failures", String.valueOf(countFailures(counts)));
-        writer.writeAttribute("errors", "0");
+        xmlStreamWriter.writeAttribute("tests", String.valueOf(data.getTestCaseCount()));
+        xmlStreamWriter.writeAttribute("skipped", String.valueOf(counts.get(SKIPPED)));
+        xmlStreamWriter.writeAttribute("failures", String.valueOf(countFailures(counts)));
+        xmlStreamWriter.writeAttribute("errors", "0");
 
         Optional<String> testRunStartedAt = data.getTestRunStartedAt();
         if (testRunStartedAt.isPresent()) {
-            writer.writeAttribute("timestamp", testRunStartedAt.get());
+            xmlStreamWriter.writeAttribute("timestamp", testRunStartedAt.get());
         }
     }
 
@@ -74,7 +66,8 @@ class XmlReportWriter {
         return notPassedNotSkipped;
     }
 
-    private void writeTestcase(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted) throws XMLStreamException {
+    private void writeTestcase(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted)
+            throws XMLStreamException {
         writer.writeStartElement("testcase");
         writeTestCaseAttributes(writer, testCaseStarted);
         writer.writeNewLine();
@@ -84,13 +77,15 @@ class XmlReportWriter {
         writer.writeNewLine();
     }
 
-    private void writeTestCaseAttributes(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted) throws XMLStreamException {
+    private void writeTestCaseAttributes(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted)
+            throws XMLStreamException {
         writer.writeAttribute("classname", data.getTestClassName(testCaseStarted));
         writer.writeAttribute("name", data.getTestName(testCaseStarted));
         writer.writeAttribute("time", String.valueOf(data.getDurationInSeconds(testCaseStarted)));
     }
 
-    private void writeNonPassedElement(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted) throws XMLStreamException {
+    private void writeNonPassedElement(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted)
+            throws XMLStreamException {
         TestStepResult result = data.getTestCaseStatus(testCaseStarted);
         TestStepResultStatus status = result.getStatus();
         if (status == TestStepResultStatus.PASSED) {
@@ -137,7 +132,8 @@ class XmlReportWriter {
         writer.writeNewLine();
     }
 
-    private void writeStepAndResultList(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted) throws XMLStreamException {
+    private void writeStepAndResultList(EscapingXmlStreamWriter writer, TestCaseStarted testCaseStarted)
+            throws XMLStreamException {
         List<Map.Entry<String, String>> results = data.getStepsAndResult(testCaseStarted);
         if (results.isEmpty()) {
             return;
@@ -148,7 +144,7 @@ class XmlReportWriter {
         writer.writeNewLine();
     }
 
-    private static String createStepResultList(List<Map.Entry<String, String>> results) {
+    private String createStepResultList(List<Map.Entry<String, String>> results) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         results.forEach(r -> {

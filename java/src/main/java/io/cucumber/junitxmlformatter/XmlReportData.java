@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Map;
 
 import static io.cucumber.messages.types.TestStepResultStatus.PASSED;
 import static io.cucumber.query.Repository.RepositoryFeature.INCLUDE_GHERKIN_DOCUMENTS;
@@ -102,17 +103,21 @@ class XmlReportData {
     String getTestSuiteName() {
         return testSuiteName;
     }
-    
+
+    // refactor: extract this lambda into a private method named renderTestStepEntry
+    // and use method reference this::renderTestStepEntry:
+    private Entry<String, String> renderTestStepEntry(Entry<TestStepFinished, TestStep> testStep) {
+        String key = renderTestStepText(testStep.getValue());
+        String value = renderTestStepResult(testStep.getKey());
+        return new SimpleEntry<>(key, value);
+    }
+
     List<Entry<String, String>> getStepsAndResult(TestCaseStarted testCaseStarted) {
         return query.findTestStepFinishedAndTestStepBy(testCaseStarted)
                 .stream()
                 // Exclude hooks
                 .filter(entry -> entry.getValue().getPickleStepId().isPresent())
-                .map(testStep -> {
-                    String key = renderTestStepText(testStep.getValue());
-                    String value = renderTestStepResult(testStep.getKey());
-                    return new SimpleEntry<>(key, value);
-                })
+                .map(this::renderTestStepEntry)
                 .collect(toList());
     }
 
@@ -146,8 +151,8 @@ class XmlReportData {
         return query.findAllTestCaseStartedOrderBy(Query::findPickleBy, pickleComparator);
     }
 
-    private static final io.cucumber.messages.types.Duration ZERO_DURATION =
-            new io.cucumber.messages.types.Duration(0L, 0);
+    private static final io.cucumber.messages.types.Duration ZERO_DURATION = new io.cucumber.messages.types.Duration(0L,
+            0);
     // By definition, but see https://github.com/cucumber/gherkin/issues/11
     private static final TestStepResult SCENARIO_WITH_NO_STEPS = new TestStepResult(ZERO_DURATION, null, PASSED, null);
 
